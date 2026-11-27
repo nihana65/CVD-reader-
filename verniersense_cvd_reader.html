@@ -1,0 +1,2958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VernierSense — CVD Reader</title>
+  <style>
+    :root {
+      --bg-page: #070d19;
+      --bg-card: #0f172a;
+      --bg-panel: #131e33;
+      --bg-input: #0b1222;
+      --border: #1e293b;
+      --border-light: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --sky: #38bdf8;
+      --sky-bg: rgba(56, 189, 248, 0.14);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.14);
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.14);
+      --rose: #f43f5e;
+      --rose-bg: rgba(244, 63, 94, 0.14);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.45;
+      padding: 14px 12px 48px;
+    }
+
+    .app-shell {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(16, 185, 129, 0.2));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--sky);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .brand p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-light);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      display: inline-block;
+    }
+
+    /* Mode Tabs */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 6px;
+    }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Cards & Sections */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .mono-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-light);
+      color: var(--sky);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+      background: var(--bg-panel);
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 42px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease;
+      user-select: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #1b2944;
+      border-color: #475569;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #0369a1;
+    }
+
+    .btn-emerald {
+      background: #059669;
+      border-color: #10b981;
+      color: #ffffff;
+    }
+
+    .btn-emerald:hover:not(:disabled) {
+      background: #047857;
+    }
+
+    .btn-amber {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #fbbf24;
+    }
+
+    .btn-amber:hover:not(:disabled) {
+      background: rgba(245, 158, 11, 0.24);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.14);
+      border-color: rgba(244, 63, 94, 0.45);
+      color: #fda4af;
+    }
+
+    .btn-sm {
+      padding: 7px 11px;
+      font-size: 0.8rem;
+      min-height: 36px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* Legend Guide Box */
+    .legend-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--text-main);
+    }
+
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .swatch-blue {
+      background: rgba(56, 189, 248, 0.28);
+      border: 2px solid var(--sky);
+    }
+
+    .swatch-amber {
+      background: rgba(245, 158, 11, 0.28);
+      border: 2px solid var(--amber);
+    }
+
+    .swatch-seam {
+      width: 15px;
+      height: 0;
+      border-top: 2px dashed var(--emerald);
+      flex-shrink: 0;
+    }
+
+    .swatch-handle {
+      width: 15px;
+      height: 15px;
+      border-radius: 999px;
+      background: var(--amber);
+      border: 2px solid #0b1222;
+      flex-shrink: 0;
+    }
+
+    .pos-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    .pos-tag-blue {
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--sky);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .pos-tag-amber {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    /* Camera Viewport */
+    .camera-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      max-height: 440px;
+      background: #050914;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #cameraVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform-origin: center center;
+    }
+
+    #cameraHudCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .camera-placeholder {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 13, 25, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .camera-placeholder p {
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      max-width: 380px;
+    }
+
+    .error-banner {
+      display: none;
+      background: var(--rose-bg);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+      color: #fecdd3;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .error-banner.visible {
+      display: flex;
+    }
+
+    /* Telemetry Grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .tele-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .tele-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+    }
+
+    .tele-val {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .tele-sub {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--emerald);
+    }
+
+    /* Upload Dropzone */
+    .upload-dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 10px;
+      padding: 28px 16px;
+      border: 2px dashed var(--border-light);
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .upload-dropzone:hover,
+    .upload-dropzone.dragover {
+      border-color: var(--sky);
+      background: rgba(56, 189, 248, 0.07);
+    }
+
+    .upload-title {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .upload-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .upload-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      background: #0284c7;
+      border: 1px solid #38bdf8;
+      color: #ffffff;
+      font-size: 0.86rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Calibration Canvas Stage */
+    .calib-stage {
+      position: relative;
+      width: 100%;
+      min-height: 250px;
+      background: #050914;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #calibCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* Control Sub-panels */
+    .sub-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stepper-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stepper-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stepper-btn:hover {
+      border-color: var(--sky);
+      color: var(--sky);
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 10px;
+      min-height: 38px;
+      outline: none;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+      border-color: var(--sky);
+    }
+
+    .n-input {
+      width: 74px;
+      text-align: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    /* High-Visibility Custom Sliders */
+    .slider-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .slider-val {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--sky);
+      font-size: 0.84rem;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #334155;
+      outline: none;
+      cursor: pointer;
+      margin: 6px 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #0b1222;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #0b1222;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+    }
+
+    /* CVD Results & 4x Loupe */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 700px) {
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cvd-hero {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cvd-main-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cvd-number {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--emerald);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .cvd-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .conf-badge {
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: var(--emerald-bg);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: #6ee7b7;
+    }
+
+    .candidates-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cand-chip {
+      padding: 7px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .cand-chip:hover {
+      border-color: var(--sky);
+      color: var(--text-main);
+    }
+
+    .cand-chip.active {
+      background: var(--emerald-bg);
+      border-color: var(--emerald);
+      color: #6ee7b7;
+    }
+
+    .loupe-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #loupeCanvas {
+      width: 100%;
+      height: 156px;
+      background: #050914;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      display: block;
+    }
+
+    /* Calculator Grid */
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .calc-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 11px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .unit-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .unit-pill {
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .unit-pill:hover,
+    .unit-pill.active {
+      border-color: var(--sky);
+      color: var(--sky);
+      background: rgba(56, 189, 248, 0.12);
+    }
+
+    .total-banner {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.18), rgba(16, 185, 129, 0.18));
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .total-formula {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .total-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-top: 2px;
+    }
+
+    /* Signal Alignment Graph */
+    #signalCanvas {
+      width: 100%;
+      height: 220px;
+      background: #050914;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      display: block;
+    }
+
+    .graph-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .graph-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #0f172a;
+      border: 1px solid var(--sky);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="4" y1="6" x2="4" y2="12" />
+            <line x1="8" y1="8" x2="8" y2="12" />
+            <line x1="12" y1="5" x2="12" y2="12" />
+            <line x1="16" y1="8" x2="16" y2="12" />
+            <line x1="20" y1="6" x2="20" y2="12" />
+            <line x1="4.8" y1="12" x2="4.8" y2="18" stroke="#f59e0b" />
+            <line x1="8.4" y1="12" x2="8.4" y2="16" stroke="#f59e0b" />
+            <line x1="12" y1="12" x2="12" y2="19" stroke="#10b981" />
+            <line x1="15.6" y1="12" x2="15.6" y2="16" stroke="#f59e0b" />
+            <line x1="19.2" y1="12" x2="19.2" y2="18" stroke="#f59e0b" />
+          </svg>
+        </div>
+        <div>
+          <h1>VernierSense — CVD Reader</h1>
+          <p>Precision Optical Coinciding Vernier Division Metrology</p>
+        </div>
+      </div>
+      <div class="badge-pill">
+        <span class="dot"></span>
+        <span>CV Engine Ready</span>
+      </div>
+    </header>
+
+    <!-- Mode Switcher (Live Camera is Default) -->
+    <nav class="mode-tabs" role="tablist">
+      <button type="button" class="tab-btn active" id="tabCameraBtn" role="tab" aria-selected="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        <span>Live Camera</span>
+      </button>
+      <button type="button" class="tab-btn" id="tabUploadBtn" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Upload Photo</span>
+      </button>
+    </nav>
+
+    <!-- Panel 1: Live Camera Mode -->
+    <section class="card" id="cameraPanel">
+      <div class="section-header">
+        <span class="section-title">Guided Optical Viewfinder</span>
+        <span class="mono-chip" id="camStatusChip">Camera Idle</span>
+      </div>
+
+      <!-- Color-coded Scale Placement Legend -->
+      <div class="legend-box">
+        <div class="legend-row">
+          <div class="legend-left">
+            <span class="swatch swatch-blue"></span>
+            <span><strong>BLUE BOX</strong> = Main Scale (Fixed)</span>
+          </div>
+          <span class="pos-tag pos-tag-blue" id="camMainPosTag">[Top]</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-left">
+            <span class="swatch swatch-amber"></span>
+            <span><strong>AMBER BOX</strong> = Vernier Scale (<span id="camVnRangeText">V0–V10</span>)</span>
+          </div>
+          <span class="pos-tag pos-tag-amber" id="camVernierPosTag">[Bottom]</span>
+        </div>
+      </div>
+
+      <div class="error-banner" id="camErrorBanner">
+        <span id="camErrorText">Camera permission denied or unavailable on this device.</span>
+        <button type="button" class="btn btn-sm btn-primary" id="switchUploadFromErrBtn">Switch to Upload Photo</button>
+      </div>
+
+      <div class="camera-stage" id="cameraStage">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <canvas id="cameraHudCanvas"></canvas>
+        <div class="camera-placeholder" id="cameraPlaceholder">
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <p>Align the <strong>Main Scale</strong> inside the Blue box and the <strong>Vernier Scale</strong> inside the Amber box with the seam on the green dashed line.</p>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="startCameraHeroBtn">Start Camera</button>
+            <button type="button" class="btn" id="placeholderUploadBtn">Upload Photo Instead</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Telemetry -->
+      <div class="telemetry-grid">
+        <div class="tele-card">
+          <span class="tele-label">Focus (Sharpness)</span>
+          <span class="tele-val" id="teleFocusVal">--</span>
+          <span class="tele-sub" id="teleFocusStatus">Waiting</span>
+        </div>
+        <div class="tele-card">
+          <span class="tele-label">Lighting / Glare</span>
+          <span class="tele-val" id="teleGlareVal">--</span>
+          <span class="tele-sub" id="teleGlareStatus">Waiting</span>
+        </div>
+        <div class="tele-card">
+          <span class="tele-label">Spirit Level</span>
+          <span class="tele-val" id="teleTiltVal">0.0°</span>
+          <span class="tele-sub" id="teleTiltStatus">Ready</span>
+        </div>
+      </div>
+
+      <!-- Camera Action Bar -->
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="startCameraBtn">Start Camera</button>
+        <button type="button" class="btn btn-emerald" id="captureFrameBtn" disabled>Capture &amp; Analyze</button>
+        <button type="button" class="btn" id="restartCameraBtn" disabled>Restart</button>
+        <button type="button" class="btn btn-danger" id="stopCameraBtn" disabled>Stop</button>
+        <button type="button" class="btn btn-amber" id="camSwapScalesBtn">Swap Scales (Main &#8597; Vernier)</button>
+        <button type="button" class="btn" id="torchBtn" disabled>Torch: Off</button>
+      </div>
+
+      <div class="slider-block" id="zoomControlBlock">
+        <div class="slider-head">
+          <span>Optical / Digital Zoom</span>
+          <span class="slider-val" id="zoomValLabel">1.0x</span>
+        </div>
+        <input type="range" id="cameraZoomSlider" min="1" max="4" step="0.1" value="1" />
+      </div>
+    </section>
+
+    <!-- Panel 2: Upload Photo Mode -->
+    <section class="card" id="uploadPanel" style="display: none;">
+      <div class="section-header">
+        <span class="section-title">Upload Scale Photograph</span>
+        <span class="mono-chip" id="uploadFileChip">No File Selected</span>
+      </div>
+
+      <input type="file" id="photoUploadInput" accept="image/*" class="sr-only" />
+      <label for="photoUploadInput" class="upload-dropzone" id="uploadDropzone">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <div class="upload-title">Tap to Choose Image or Drag &amp; Drop</div>
+        <div class="upload-sub">Supports JPG, PNG, WebP, HEIC — processed 100% locally in your browser</div>
+        <span class="upload-cta">Choose Image</span>
+      </label>
+
+      <div class="btn-row">
+        <button type="button" class="btn" id="uploadRotateCCWBtn">Rotate -90°</button>
+        <button type="button" class="btn" id="uploadRotateCWBtn">Rotate +90°</button>
+        <span class="mono-chip" id="uploadAngleBadge">0°</span>
+      </div>
+    </section>
+
+    <!-- Section: Photo Configuration & Calibration (Exact Requested Order) -->
+    <section class="card" id="calibrationSection">
+      <div class="section-header">
+        <span class="section-title">Photo Configuration &amp; Calibration</span>
+        <span class="mono-chip" id="imageDimChip">No Image (0°)</span>
+      </div>
+
+      <!-- 1. Photo Calibration Canvas FIRST -->
+      <div class="calib-stage" id="calibStage">
+        <canvas id="calibCanvas" width="800" height="440"></canvas>
+      </div>
+
+      <!-- 2. Calibration Overlay Guide & Instructions SECOND (Directly Below Photo) -->
+      <div class="legend-box">
+        <div class="section-title" style="font-size: 0.74rem;">Calibration Overlay Guide &amp; Instructions</div>
+        <div class="legend-row">
+          <div class="legend-left">
+            <span class="swatch swatch-blue"></span>
+            <span><strong>Blue Box</strong> = Main Scale (Fixed)</span>
+          </div>
+          <span class="pos-tag pos-tag-blue" id="calMainPosTag">[Top]</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-left">
+            <span class="swatch swatch-amber"></span>
+            <span><strong>Amber Box</strong> = Vernier Scale (Sliding, <span id="calVnRangeText">V0–V10</span>)</span>
+          </div>
+          <span class="pos-tag pos-tag-amber" id="calVernierPosTag">[Bottom]</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-left">
+            <span class="swatch-seam"></span>
+            <span><strong>Green Dashed Line</strong> = Scale Seam (drag up/down to align boundary)</span>
+          </div>
+        </div>
+        <div class="legend-row">
+          <div class="legend-left">
+            <span class="swatch-handle"></span>
+            <span><strong>V0 &amp; <span id="calHandleText">V10</span> Handles</strong> = Drag left/right onto 0th &amp; last Vernier marks</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. VSD (N), Rotation, Swap, Polarity & Sliders THIRD -->
+      <div class="sub-panel">
+        <div class="stepper-row">
+          <div class="stepper-group">
+            <span style="font-size: 0.84rem; font-weight: 700; color: var(--text-main);">Vernier Divisions (N):</span>
+            <button type="button" class="stepper-btn" id="calNMinusBtn" aria-label="Decrease N">−</button>
+            <input type="number" id="calNInput" class="n-input" min="2" max="200" step="1" value="10" />
+            <button type="button" class="stepper-btn" id="calNPlusBtn" aria-label="Increase N">+</button>
+          </div>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-sm" id="calRotateCCWBtn">Rotate -90°</button>
+            <button type="button" class="btn btn-sm" id="calRotateCWBtn">Rotate +90°</button>
+            <span class="mono-chip" id="calAngleBadge">0°</span>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-sm btn-amber" id="calSwapScalesBtn">Swap Scales (Main &#8597; Vernier)</button>
+          <button type="button" class="btn btn-sm" id="resetMarkersBtn">Reset Markers</button>
+          <button type="button" class="btn btn-sm btn-primary" id="reanalyzeBtn">Re-Analyze CVD</button>
+        </div>
+      </div>
+
+      <div class="sub-panel">
+        <div class="slider-block">
+          <div class="slider-head">
+            <span>Tick Mark Polarity</span>
+          </div>
+          <select id="polaritySelect">
+            <option value="auto" selected>Auto (Detect Dark or Light Ticks)</option>
+            <option value="dark">Dark Ticks (Engraved on Bright Metal)</option>
+            <option value="light">Light Ticks (White/Etched on Dark Metal)</option>
+          </select>
+        </div>
+
+        <div class="slider-block">
+          <div class="slider-head">
+            <span>Fine Rotation</span>
+            <span class="slider-val" id="fineRotVal">0.0°</span>
+          </div>
+          <input type="range" id="fineRotSlider" min="-10" max="10" step="0.1" value="0" />
+        </div>
+
+        <div class="slider-block">
+          <div class="slider-head">
+            <span>Band Height</span>
+            <span class="slider-val" id="bandHeightVal">34 px</span>
+          </div>
+          <input type="range" id="bandHeightSlider" min="12" max="100" step="1" value="34" />
+        </div>
+
+        <div class="slider-block">
+          <div class="slider-head">
+            <span>Contrast Boost</span>
+            <span class="slider-val" id="contrastVal">1.3x</span>
+          </div>
+          <input type="range" id="contrastSlider" min="0.5" max="3.0" step="0.1" value="1.3" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Detected CVD & 4x Verification Loupe -->
+    <section class="card" id="cvdResultSection">
+      <div class="section-header">
+        <span class="section-title">Detected CVD &amp; Optical Verification</span>
+        <span class="mono-chip" id="detectedPolarityChip">Polarity: Auto</span>
+      </div>
+
+      <div class="results-grid">
+        <div class="cvd-hero">
+          <div class="cvd-main-row">
+            <div>
+              <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Coinciding Division</div>
+              <div class="cvd-number" id="detectedCvdDisplay">V0</div>
+              <div class="cvd-sub" id="subpixelDisplay">Capture or upload a scale photo to detect CVD</div>
+            </div>
+            <div class="conf-badge" id="confidenceBadge">Confidence: --</div>
+          </div>
+
+          <div>
+            <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;">Top-3 Candidate Divisions (Tap to Inspect)</div>
+            <div class="candidates-row" id="candidatesRow">
+              <button type="button" class="cand-chip active" data-div="0">#1: V0 (--)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="loupe-card">
+          <div class="section-header">
+            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">4× Verification Loupe</span>
+            <span class="mono-chip" id="loupeTargetChip">V0</span>
+          </div>
+          <canvas id="loupeCanvas" width="320" height="160"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Scale Setup & Total Reading Calculator -->
+    <section class="card" id="calculatorSection">
+      <div class="section-header">
+        <span class="section-title">Scale Setup &amp; Total Reading Calculator</span>
+        <span class="mono-chip" id="lcSummaryChip">LC = 0.1 mm</span>
+      </div>
+
+      <div class="calc-grid">
+        <!-- Synced Vernier Divisions (N) -->
+        <div class="field-box">
+          <div class="field-label">
+            <span>No. of Vernier Divisions (N)</span>
+            <span style="color: var(--sky); font-size: 0.7rem;">Synced</span>
+          </div>
+          <div class="stepper-group">
+            <button type="button" class="stepper-btn" id="calcNMinusBtn" aria-label="Decrease N">−</button>
+            <input type="number" id="calcNInput" class="n-input" min="2" max="200" step="1" value="10" style="flex: 1;" />
+            <button type="button" class="stepper-btn" id="calcNPlusBtn" aria-label="Increase N">+</button>
+          </div>
+        </div>
+
+        <!-- Unit of Calculation -->
+        <div class="field-box">
+          <div class="field-label">
+            <span>Unit of Calculation</span>
+          </div>
+          <input type="text" id="unitInput" value="mm" placeholder="e.g. mm, cm, in, deg" />
+          <div class="unit-pills" id="unitPills">
+            <button type="button" class="unit-pill active" data-unit="mm">mm</button>
+            <button type="button" class="unit-pill" data-unit="cm">cm</button>
+            <button type="button" class="unit-pill" data-unit="in">in</button>
+            <button type="button" class="unit-pill" data-unit="°">°</button>
+            <button type="button" class="unit-pill" data-unit="'">'</button>
+            <button type="button" class="unit-pill" data-unit="µm">µm</button>
+          </div>
+        </div>
+
+        <!-- 1 MSD & Auto-calc LC -->
+        <div class="field-box">
+          <div class="field-label">
+            <span>1 Main Scale Div (1 MSD)</span>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <input type="number" id="msdInput" step="any" value="1" style="width: 90px;" />
+            <button type="button" class="btn btn-sm btn-primary" id="autoCalcLcBtn" style="flex: 1;">Auto-calc LC (1 MSD / N)</button>
+          </div>
+        </div>
+
+        <!-- Least Count (LC) -->
+        <div class="field-box">
+          <div class="field-label">
+            <span>Least Count (LC)</span>
+            <span class="unit-suffix" style="color: var(--sky);">mm</span>
+          </div>
+          <input type="number" id="lcInput" step="any" value="0.1" />
+        </div>
+
+        <!-- Main Scale Reading (MSR) -->
+        <div class="field-box">
+          <div class="field-label">
+            <span>Main Scale Reading (MSR)</span>
+            <span class="unit-suffix" style="color: var(--sky);">mm</span>
+          </div>
+          <input type="number" id="msrInput" step="any" value="0" />
+        </div>
+
+        <!-- Coinciding Vernier Division (CVD) -->
+        <div class="field-box">
+          <div class="field-label">
+            <span>Coinciding Vernier Div (CVD)</span>
+            <span style="color: var(--emerald); font-size: 0.7rem;">Auto / Editable</span>
+          </div>
+          <input type="number" id="cvdInput" step="1" min="0" max="200" value="0" />
+        </div>
+
+        <!-- Zero Error -->
+        <div class="field-box" style="grid-column: 1 / -1;">
+          <div class="field-label">
+            <span>Zero Error (±, subtracted from reading)</span>
+            <span class="unit-suffix" style="color: var(--sky);">mm</span>
+          </div>
+          <input type="number" id="zeroErrorInput" step="any" value="0" />
+        </div>
+      </div>
+
+      <!-- Total Reading Banner -->
+      <div class="total-banner">
+        <div>
+          <div class="total-formula" id="totalFormulaText">Total = MSR + (CVD × LC) − Zero Error</div>
+          <div class="total-value" id="totalReadingDisplay">0.000 mm</div>
+        </div>
+        <button type="button" class="btn btn-primary" id="copyReadingBtn">Copy Reading</button>
+      </div>
+    </section>
+
+    <!-- Section: 1D Signal Alignment Graph (Full-Width at End of Page) -->
+    <section class="card" id="signalGraphSection">
+      <div class="section-header">
+        <span class="section-title">1D High-Pass Tick Signal Alignment Profile</span>
+        <div class="graph-legend">
+          <span><i class="swatch swatch-blue" style="width:12px;height:12px;"></i> Main Scale M(x)</span>
+          <span><i class="swatch swatch-amber" style="width:12px;height:12px;"></i> Vernier Scale V(x)</span>
+          <span><i class="swatch" style="width:12px;height:12px;background:rgba(16,185,129,0.28);border:1px solid #10b981;"></i> Selected CVD</span>
+        </div>
+      </div>
+      <canvas id="signalCanvas" width="900" height="220"></canvas>
+    </section>
+  </div>
+
+  <div class="toast" id="toastEl"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      function $(id) {
+        return document.getElementById(id);
+      }
+
+      function on(el, evt, fn, opts) {
+        if (el) {
+          el.addEventListener(evt, fn, opts || false);
+        }
+      }
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function showToast(msg) {
+        var t = $("toastEl");
+        if (!t) return;
+        t.textContent = msg;
+        t.classList.add("show");
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(function () {
+          t.classList.remove("show");
+        }, 2200);
+      }
+
+      function drawRoundedRect(ctx, x, y, w, h, r) {
+        var rad = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rad);
+        ctx.arcTo(x + w, y + h, x, y + h, rad);
+        ctx.arcTo(x, y + h, x, y, rad);
+        ctx.arcTo(x, y, x + w, y, rad);
+        ctx.closePath();
+      }
+
+      // Application State
+      var state = {
+        activeTab: "camera",
+        N: 10,
+        unit: "mm",
+        msd: 1,
+        lc: 0.1,
+        msr: 0,
+        cvd: 0,
+        zeroError: 0,
+        swapScales: false, // false: Main=Top (Blue), Vernier=Bottom (Amber)
+        rotationDeg: 0,    // 0, 90, 180, 270
+        fineRotDeg: 0,
+        bandHeight: 34,
+        contrast: 1.3,
+        polarity: "auto",
+        detectedPolarity: "Auto",
+        // Normalized marker coords in [0..1] relative to rotated source canvas
+        seamY: 0.50,
+        v0X: 0.18,
+        vnX: 0.82,
+        // Drag state
+        dragging: null, // 'seam' | 'v0' | 'vn' | 'span'
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        // Source image state
+        rawImage: null,       // HTMLImageElement or HTMLCanvasElement
+        rotatedCanvas: null,  // Offscreen canvas rotated by rotationDeg
+        hasSource: false,
+        // CV Analysis results
+        analysis: {
+          cvd: 0,
+          subpixelCvd: 0,
+          confidence: 0,
+          candidates: [],
+          mainProfile: [],
+          vernierProfile: [],
+          mainPeaks: [],
+          vernierPeaks: [],
+          uV0: 0,
+          uVN: 1,
+          stripWidth: 0
+        },
+        // Camera state
+        stream: null,
+        videoTrack: null,
+        torchOn: false,
+        zoom: 1.0,
+        hwZoomSupported: false,
+        hudRaf: null,
+        teleTimer: null,
+        tiltDeg: 0
+      };
+
+      // Offscreen canvas for camera telemetry
+      var teleCanvas = document.createElement("canvas");
+      teleCanvas.width = 160;
+      teleCanvas.height = 120;
+      var teleCtx = teleCanvas.getContext("2d", { willReadFrequently: true });
+
+      // ---------------- TAB SWITCHING ----------------
+      function switchTab(tab) {
+        state.activeTab = tab;
+        var camBtn = $("tabCameraBtn");
+        var upBtn = $("tabUploadBtn");
+        var camPanel = $("cameraPanel");
+        var upPanel = $("uploadPanel");
+
+        if (tab === "camera") {
+          camBtn.classList.add("active");
+          camBtn.setAttribute("aria-selected", "true");
+          upBtn.classList.remove("active");
+          upBtn.setAttribute("aria-selected", "false");
+          camPanel.style.display = "flex";
+          upPanel.style.display = "none";
+          drawCameraHud();
+        } else {
+          upBtn.classList.add("active");
+          upBtn.setAttribute("aria-selected", "true");
+          camBtn.classList.remove("active");
+          camBtn.setAttribute("aria-selected", "false");
+          upPanel.style.display = "flex";
+          camPanel.style.display = "none";
+        }
+      }
+
+      on($("tabCameraBtn"), "click", function () { switchTab("camera"); });
+      on($("tabUploadBtn"), "click", function () { switchTab("upload"); });
+      on($("placeholderUploadBtn"), "click", function () { switchTab("upload"); });
+      on($("switchUploadFromErrBtn"), "click", function () { switchTab("upload"); });
+
+      // ---------------- SYNCED N & SWAP SCALES ----------------
+      function setDivisionsN(newN, triggerAnalyze) {
+        var nVal = Math.round(Number(newN));
+        if (!isFinite(nVal) || nVal < 2) nVal = 2;
+        if (nVal > 200) nVal = 200;
+        state.N = nVal;
+
+        if ($("calNInput")) $("calNInput").value = String(nVal);
+        if ($("calcNInput")) $("calcNInput").value = String(nVal);
+        if ($("cvdInput")) $("cvdInput").max = String(nVal);
+
+        var rangeStr = "V0–V" + nVal;
+        if ($("camVnRangeText")) $("camVnRangeText").textContent = rangeStr;
+        if ($("calVnRangeText")) $("calVnRangeText").textContent = rangeStr;
+        if ($("calHandleText")) $("calHandleText").textContent = "V" + nVal;
+
+        if (state.cvd > nVal) {
+          state.cvd = nVal;
+          if ($("cvdInput")) $("cvdInput").value = String(nVal);
+        }
+
+        updateCalculator();
+        drawCameraHud();
+        if (triggerAnalyze !== false) {
+          if (state.hasSource) {
+            runCvAnalysis();
+          } else {
+            drawCalibrationCanvas();
+            renderSignalGraph();
+          }
+        }
+      }
+
+      on($("calNMinusBtn"), "click", function () { setDivisionsN(state.N - 1, true); });
+      on($("calNPlusBtn"), "click", function () { setDivisionsN(state.N + 1, true); });
+      on($("calcNMinusBtn"), "click", function () { setDivisionsN(state.N - 1, true); });
+      on($("calcNPlusBtn"), "click", function () { setDivisionsN(state.N + 1, true); });
+
+      on($("calNInput"), "change", function (e) { setDivisionsN(e.target.value, true); });
+      on($("calcNInput"), "change", function (e) { setDivisionsN(e.target.value, true); });
+
+      function toggleSwapScales() {
+        state.swapScales = !state.swapScales;
+        var mainPos = state.swapScales ? "[Bottom]" : "[Top]";
+        var vernPos = state.swapScales ? "[Top]" : "[Bottom]";
+
+        if ($("camMainPosTag")) $("camMainPosTag").textContent = mainPos;
+        if ($("camVernierPosTag")) $("camVernierPosTag").textContent = vernPos;
+        if ($("calMainPosTag")) $("calMainPosTag").textContent = mainPos;
+        if ($("calVernierPosTag")) $("calVernierPosTag").textContent = vernPos;
+
+        drawCameraHud();
+        if (state.hasSource) {
+          runCvAnalysis();
+        } else {
+          drawCalibrationCanvas();
+        }
+        showToast(state.swapScales ? "Swapped: Vernier on Top, Main on Bottom" : "Default: Main on Top, Vernier on Bottom");
+      }
+
+      on($("camSwapScalesBtn"), "click", toggleSwapScales);
+      on($("calSwapScalesBtn"), "click", toggleSwapScales);
+
+      // ---------------- IMAGE LOADING & 90° ROTATION ----------------
+      function rebuildRotatedCanvas() {
+        if (!state.rawImage) return;
+        var srcW = state.rawImage.naturalWidth || state.rawImage.width;
+        var srcH = state.rawImage.naturalHeight || state.rawImage.height;
+        if (!srcW || !srcH) return;
+
+        var angle = ((state.rotationDeg % 360) + 360) % 360;
+        var swapDim = angle === 90 || angle === 270;
+        var dstW = swapDim ? srcH : srcW;
+        var dstH = swapDim ? srcW : srcH;
+
+        var c = document.createElement("canvas");
+        c.width = dstW;
+        c.height = dstH;
+        var ctx = c.getContext("2d");
+        ctx.save();
+        ctx.translate(dstW / 2, dstH / 2);
+        ctx.rotate((angle * Math.PI) / 180);
+        ctx.drawImage(state.rawImage, -srcW / 2, -srcH / 2, srcW, srcH);
+        ctx.restore();
+
+        state.rotatedCanvas = c;
+        state.hasSource = true;
+
+        var angleTxt = angle + "°";
+        if ($("uploadAngleBadge")) $("uploadAngleBadge").textContent = angleTxt;
+        if ($("calAngleBadge")) $("calAngleBadge").textContent = angleTxt;
+        if ($("imageDimChip")) $("imageDimChip").textContent = dstW + " × " + dstH + " px (" + angleTxt + ")";
+      }
+
+      function rotateSource(deltaDeg) {
+        state.rotationDeg = (((state.rotationDeg + deltaDeg) % 360) + 360) % 360;
+        var angleTxt = state.rotationDeg + "°";
+        if ($("uploadAngleBadge")) $("uploadAngleBadge").textContent = angleTxt;
+        if ($("calAngleBadge")) $("calAngleBadge").textContent = angleTxt;
+
+        if (!state.rawImage) {
+          showToast("Rotation set to " + angleTxt);
+          return;
+        }
+        rebuildRotatedCanvas();
+        runCvAnalysis();
+        showToast("Rotated to " + angleTxt);
+      }
+
+      on($("uploadRotateCCWBtn"), "click", function () { rotateSource(-90); });
+      on($("uploadRotateCWBtn"), "click", function () { rotateSource(90); });
+      on($("calRotateCCWBtn"), "click", function () { rotateSource(-90); });
+      on($("calRotateCWBtn"), "click", function () { rotateSource(90); });
+
+      function loadNewImageSource(imgOrCanvas, labelName) {
+        state.rawImage = imgOrCanvas;
+        state.rotationDeg = 0;
+        state.fineRotDeg = 0;
+        if ($("fineRotSlider")) $("fineRotSlider").value = "0";
+        if ($("fineRotVal")) $("fineRotVal").textContent = "0.0°";
+        if ($("uploadFileChip") && labelName) $("uploadFileChip").textContent = labelName;
+
+        rebuildRotatedCanvas();
+        runCvAnalysis();
+        showToast("Loaded image — drag Seam & V0/V" + state.N + " handles to align");
+      }
+
+      function handleUploadedFile(file) {
+        if (!file) return;
+        var fileName = file.name || "Uploaded Image";
+
+        function onImgReady(img) {
+          loadNewImageSource(img, fileName);
+          var calSec = $("calibrationSection");
+          if (calSec && typeof calSec.scrollIntoView === "function") {
+            calSec.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+
+        // Primary: FileReader DataURL; Fallback: ObjectURL
+        try {
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            var img = new Image();
+            img.onload = function () { onImgReady(img); };
+            img.onerror = function () { showToast("Could not decode selected image."); };
+            img.src = ev.target.result;
+          };
+          reader.onerror = function () {
+            var url = URL.createObjectURL(file);
+            var img = new Image();
+            img.onload = function () {
+              onImgReady(img);
+              URL.revokeObjectURL(url);
+            };
+            img.src = url;
+          };
+          reader.readAsDataURL(file);
+        } catch (err) {
+          var url = URL.createObjectURL(file);
+          var img = new Image();
+          img.onload = function () {
+            onImgReady(img);
+            URL.revokeObjectURL(url);
+          };
+          img.src = url;
+        }
+      }
+
+      var fileInput = $("photoUploadInput");
+      on(fileInput, "change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (f) {
+          handleUploadedFile(f);
+        }
+        e.target.value = "";
+      });
+
+      var dropzone = $("uploadDropzone");
+      on(dropzone, "dragover", function (e) {
+        e.preventDefault();
+        dropzone.classList.add("dragover");
+      });
+      on(dropzone, "dragleave", function () {
+        dropzone.classList.remove("dragover");
+      });
+      on(dropzone, "drop", function (e) {
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) handleUploadedFile(f);
+      });
+
+      // ---------------- LIVE CAMERA PIPELINE ----------------
+      function setCameraButtons(isLive) {
+        if ($("startCameraBtn")) $("startCameraBtn").disabled = isLive;
+        if ($("captureFrameBtn")) $("captureFrameBtn").disabled = !isLive;
+        if ($("restartCameraBtn")) $("restartCameraBtn").disabled = !isLive;
+        if ($("stopCameraBtn")) $("stopCameraBtn").disabled = !isLive;
+        if ($("cameraPlaceholder")) $("cameraPlaceholder").style.display = isLive ? "none" : "flex";
+        if ($("camStatusChip")) $("camStatusChip").textContent = isLive ? "Live Feed Active" : "Camera Idle";
+      }
+
+      function stopCamera() {
+        if (state.hudRaf) {
+          cancelAnimationFrame(state.hudRaf);
+          state.hudRaf = null;
+        }
+        if (state.teleTimer) {
+          clearInterval(state.teleTimer);
+          state.teleTimer = null;
+        }
+        if (state.stream) {
+          try {
+            state.stream.getTracks().forEach(function (t) { t.stop(); });
+          } catch (e) {}
+          state.stream = null;
+        }
+        state.videoTrack = null;
+        state.torchOn = false;
+        state.hwZoomSupported = false;
+        if ($("torchBtn")) {
+          $("torchBtn").disabled = true;
+          $("torchBtn").textContent = "Torch: Off";
+        }
+        var video = $("cameraVideo");
+        if (video) {
+          video.srcObject = null;
+          video.style.transform = "scale(1)";
+        }
+        setCameraButtons(false);
+        drawCameraHud();
+      }
+
+      async function startCamera() {
+        var errBanner = $("camErrorBanner");
+        if (errBanner) errBanner.classList.remove("visible");
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          if ($("camErrorText")) $("camErrorText").textContent = "Camera API not supported in this browser/context. Use Upload Photo.";
+          if (errBanner) errBanner.classList.add("visible");
+          return;
+        }
+
+        stopCamera();
+        if ($("camStatusChip")) $("camStatusChip").textContent = "Starting...";
+
+        var stream = null;
+        var attempts = [
+          {
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            },
+            audio: false
+          },
+          {
+            video: { facingMode: "environment" },
+            audio: false
+          },
+          {
+            video: true,
+            audio: false
+          }
+        ];
+
+        var lastErr = null;
+        for (var i = 0; i < attempts.length; i++) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(attempts[i]);
+            if (stream) break;
+          } catch (err) {
+            lastErr = err;
+          }
+        }
+
+        if (!stream) {
+          var reason = lastErr && lastErr.name ? lastErr.name : "Permission/Hardware Error";
+          if ($("camErrorText")) {
+            $("camErrorText").textContent = "Unable to start camera (" + reason + "). Allow camera permissions or upload a photo.";
+          }
+          if (errBanner) errBanner.classList.add("visible");
+          setCameraButtons(false);
+          return;
+        }
+
+        state.stream = stream;
+        var video = $("cameraVideo");
+        video.srcObject = stream;
+        try {
+          await video.play();
+        } catch (e) {}
+
+        var tracks = stream.getVideoTracks();
+        state.videoTrack = tracks && tracks[0] ? tracks[0] : null;
+
+        // Inspect hardware capabilities (Torch & Zoom) safely
+        if (state.videoTrack && typeof state.videoTrack.getCapabilities === "function") {
+          try {
+            var caps = state.videoTrack.getCapabilities();
+            if (caps && caps.torch) {
+              $("torchBtn").disabled = false;
+            }
+            if (caps && caps.zoom) {
+              state.hwZoomSupported = true;
+              var zSlider = $("cameraZoomSlider");
+              zSlider.min = String(caps.zoom.min || 1);
+              zSlider.max = String(Math.min(caps.zoom.max || 4, 6));
+              zSlider.step = String(caps.zoom.step || 0.1);
+              zSlider.value = String(caps.zoom.min || 1);
+              state.zoom = Number(zSlider.value);
+              $("zoomValLabel").textContent = state.zoom.toFixed(1) + "x";
+            }
+          } catch (e) {}
+        }
+
+        setCameraButtons(true);
+        startCameraTelemetryLoop();
+        startHudRenderLoop();
+      }
+
+      function startHudRenderLoop() {
+        function loop() {
+          drawCameraHud();
+          if (state.stream) {
+            state.hudRaf = requestAnimationFrame(loop);
+          }
+        }
+        state.hudRaf = requestAnimationFrame(loop);
+      }
+
+      function startCameraTelemetryLoop() {
+        var video = $("cameraVideo");
+        state.teleTimer = setInterval(function () {
+          if (!video || video.readyState < 2) return;
+          try {
+            teleCtx.drawImage(video, 0, 0, 160, 120);
+            var imgData = teleCtx.getImageData(24, 30, 112, 60).data;
+            var w = 112;
+            var h = 60;
+            var lum = new Float32Array(w * h);
+            var overexposed = 0;
+            var sumLum = 0;
+
+            for (var i = 0, p = 0; i < imgData.length; i += 4, p++) {
+              var y = 0.299 * imgData[i] + 0.587 * imgData[i + 1] + 0.114 * imgData[i + 2];
+              lum[p] = y;
+              sumLum += y;
+              if (y > 242) overexposed++;
+            }
+
+            // Laplacian variance for focus sharpness
+            var lapSum = 0;
+            var lapSqSum = 0;
+            var count = 0;
+            for (var r = 1; r < h - 1; r++) {
+              for (var c = 1; c < w - 1; c++) {
+                var idx = r * w + c;
+                var lap = -4 * lum[idx] + lum[idx - 1] + lum[idx + 1] + lum[idx - w] + lum[idx + w];
+                lapSum += lap;
+                lapSqSum += lap * lap;
+                count++;
+              }
+            }
+            var meanLap = lapSum / count;
+            var varLap = Math.max(0, lapSqSum / count - meanLap * meanLap);
+            var focusScore = Math.round(varLap);
+
+            var glarePct = (overexposed / (w * h)) * 100;
+            var avgBrightness = sumLum / (w * h);
+
+            $("teleFocusVal").textContent = String(focusScore);
+            if (focusScore >= 140) {
+              $("teleFocusStatus").textContent = "Sharp";
+              $("teleFocusStatus").style.color = "#10b981";
+            } else if (focusScore >= 65) {
+              $("teleFocusStatus").textContent = "Acceptable";
+              $("teleFocusStatus").style.color = "#fbbf24";
+            } else {
+              $("teleFocusStatus").textContent = "Blurry — Hold Steady";
+              $("teleFocusStatus").style.color = "#f43f5e";
+            }
+
+            $("teleGlareVal").textContent = glarePct.toFixed(1) + "% glare";
+            if (glarePct > 14) {
+              $("teleGlareStatus").textContent = "Glare — Tilt Slightly";
+              $("teleGlareStatus").style.color = "#f43f5e";
+            } else if (avgBrightness < 45) {
+              $("teleGlareStatus").textContent = "Low Light";
+              $("teleGlareStatus").style.color = "#fbbf24";
+            } else {
+              $("teleGlareStatus").textContent = "Optimal Lighting";
+              $("teleGlareStatus").style.color = "#10b981";
+            }
+          } catch (e) {}
+        }, 350);
+      }
+
+      // Spirit Level Orientation Listener
+      try {
+        window.addEventListener("deviceorientation", function (ev) {
+          if (typeof ev.gamma === "number" && isFinite(ev.gamma)) {
+            var tilt = ev.gamma;
+            if (Math.abs(tilt) > 45 && typeof ev.beta === "number") {
+              tilt = ev.beta;
+            }
+            state.tiltDeg = tilt;
+            if ($("teleTiltVal")) $("teleTiltVal").textContent = tilt.toFixed(1) + "°";
+            if ($("teleTiltStatus")) {
+              if (Math.abs(tilt) <= 2.5) {
+                $("teleTiltStatus").textContent = "Level";
+                $("teleTiltStatus").style.color = "#10b981";
+              } else {
+                $("teleTiltStatus").textContent = "Tilt to Level";
+                $("teleTiltStatus").style.color = "#fbbf24";
+              }
+            }
+          }
+        });
+      } catch (e) {}
+
+      on($("startCameraBtn"), "click", startCamera);
+      on($("startCameraHeroBtn"), "click", startCamera);
+      on($("restartCameraBtn"), "click", startCamera);
+      on($("stopCameraBtn"), "click", stopCamera);
+
+      on($("torchBtn"), "click", async function () {
+        if (!state.videoTrack) return;
+        try {
+          state.torchOn = !state.torchOn;
+          await state.videoTrack.applyConstraints({ advanced: [{ torch: state.torchOn }] });
+          $("torchBtn").textContent = state.torchOn ? "Torch: On" : "Torch: Off";
+        } catch (e) {
+          state.torchOn = false;
+          $("torchBtn").textContent = "Torch: Off";
+          showToast("Torch not supported on this lens");
+        }
+      });
+
+      on($("cameraZoomSlider"), "input", async function (e) {
+        var z = Number(e.target.value) || 1;
+        state.zoom = z;
+        $("zoomValLabel").textContent = z.toFixed(1) + "x";
+        if (state.hwZoomSupported && state.videoTrack) {
+          try {
+            await state.videoTrack.applyConstraints({ advanced: [{ zoom: z }] });
+            return;
+          } catch (err) {}
+        }
+        var video = $("cameraVideo");
+        if (video) {
+          video.style.transform = "scale(" + z + ")";
+        }
+      });
+
+      on($("captureFrameBtn"), "click", function () {
+        var video = $("cameraVideo");
+        if (!video || video.readyState < 2) {
+          showToast("Camera frame not ready yet");
+          return;
+        }
+        var vw = video.videoWidth || 1280;
+        var vh = video.videoHeight || 720;
+        var snap = document.createElement("canvas");
+        snap.width = vw;
+        snap.height = vh;
+        var sctx = snap.getContext("2d");
+
+        // Apply digital zoom crop if hardware zoom wasn't used
+        if (!state.hwZoomSupported && state.zoom > 1.01) {
+          var cropW = vw / state.zoom;
+          var cropH = vh / state.zoom;
+          var sx = (vw - cropW) / 2;
+          var sy = (vh - cropH) / 2;
+          sctx.drawImage(video, sx, sy, cropW, cropH, 0, 0, vw, vh);
+        } else {
+          sctx.drawImage(video, 0, 0, vw, vh);
+        }
+
+        // Sync HUD positions into calibration markers
+        state.seamY = 0.50;
+        state.v0X = 0.16;
+        state.vnX = 0.84;
+
+        loadNewImageSource(snap, "Camera Capture (" + vw + "×" + vh + ")");
+        var calSec = $("calibrationSection");
+        if (calSec && typeof calSec.scrollIntoView === "function") {
+          calSec.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+
+      // ---------------- CAMERA HUD DRAWING ----------------
+      function drawCameraHud() {
+        var canvas = $("cameraHudCanvas");
+        var stage = $("cameraStage");
+        if (!canvas || !stage) return;
+
+        var rect = stage.getBoundingClientRect();
+        var w = Math.max(300, Math.round(rect.width || 640));
+        var h = Math.max(220, Math.round(rect.height || 480));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
+        var ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, w, h);
+
+        var x0 = w * 0.14;
+        var x1 = w * 0.86;
+        var boxW = x1 - x0;
+        var seamY = h * 0.50;
+        var bandH = Math.max(36, h * 0.15);
+
+        var mainTop = !state.swapScales;
+        var blueY = mainTop ? seamY - bandH - 3 : seamY + 3;
+        var amberY = mainTop ? seamY + 3 : seamY - bandH - 3;
+
+        // Blue Box = Main Scale
+        ctx.fillStyle = "rgba(56, 189, 248, 0.14)";
+        ctx.fillRect(x0, blueY, boxW, bandH);
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x0, blueY, boxW, bandH);
+
+        // Amber Box = Vernier Scale
+        ctx.fillStyle = "rgba(245, 158, 11, 0.14)";
+        ctx.fillRect(x0, amberY, boxW, bandH);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x0, amberY, boxW, bandH);
+
+        // Dashed Emerald Seam Line
+        ctx.save();
+        ctx.setLineDash([7, 5]);
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.06, seamY);
+        ctx.lineTo(w * 0.94, seamY);
+        ctx.stroke();
+        ctx.restore();
+
+        // High-contrast HUD pill labels
+        function drawHudPill(text, cx, cy, bg, fg) {
+          ctx.font = "700 11px -apple-system, BlinkMacSystemFont, sans-serif";
+          var tw = ctx.measureText(text).width;
+          var pw = tw + 16;
+          var ph = 20;
+          ctx.fillStyle = bg;
+          drawRoundedRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, 10);
+          ctx.fill();
+          ctx.fillStyle = fg;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, cx, cy + 0.5);
+        }
+
+        drawHudPill("BLUE BOX: MAIN SCALE", w / 2, blueY + bandH / 2, "rgba(7, 13, 25, 0.84)", "#38bdf8");
+        drawHudPill("AMBER BOX: VERNIER (V0–V" + state.N + ")", w / 2, amberY + bandH / 2, "rgba(7, 13, 25, 0.84)", "#fbbf24");
+
+        // V0 and VN corner brackets on Vernier box
+        ctx.fillStyle = "#f59e0b";
+        ctx.font = "800 11px ui-monospace, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("V0", x0 + 14, amberY + (mainTop ? bandH - 10 : 12));
+        ctx.fillText("V" + state.N, x1 - 18, amberY + (mainTop ? bandH - 10 : 12));
+      }
+
+      // ---------------- CALIBRATION CANVAS (CLEAN OVERLAY + V0/VN HANDLES) ----------------
+      function getCalibGeometry() {
+        var canvas = $("calibCanvas");
+        var w = canvas.width;
+        var h = canvas.height;
+        var v0X = clamp(state.v0X, 0.03, 0.92) * w;
+        var vnX = clamp(state.vnX, 0.08, 0.97) * w;
+        if (vnX - v0X < 40) {
+          vnX = Math.min(w - 12, v0X + 40);
+        }
+        var seamY = clamp(state.seamY, 0.12, 0.88) * h;
+        var scaleRatio = state.rotatedCanvas ? w / state.rotatedCanvas.width : 1;
+        var bandH = Math.max(16, state.bandHeight * scaleRatio);
+        var mainTop = !state.swapScales;
+        var blueY = mainTop ? seamY - bandH - 2 : seamY + 2;
+        var amberY = mainTop ? seamY + 2 : seamY - bandH - 2;
+        var handleY = mainTop ? amberY + bandH : amberY;
+
+        return {
+          w: w,
+          h: h,
+          v0X: v0X,
+          vnX: vnX,
+          seamY: seamY,
+          bandH: bandH,
+          blueY: blueY,
+          amberY: amberY,
+          handleY: handleY
+        };
+      }
+
+      function drawCalibrationCanvas() {
+        var canvas = $("calibCanvas");
+        var stage = $("calibStage");
+        if (!canvas || !stage) return;
+
+        var stageW = Math.max(300, Math.round(stage.clientWidth || 720));
+        if (state.hasSource && state.rotatedCanvas) {
+          var aspect = state.rotatedCanvas.height / state.rotatedCanvas.width;
+          canvas.width = stageW;
+          canvas.height = Math.max(220, Math.round(stageW * aspect));
+        } else {
+          canvas.width = stageW;
+          canvas.height = Math.round(stageW * 0.56);
+        }
+
+        var ctx = canvas.getContext("2d");
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!state.hasSource || !state.rotatedCanvas) {
+          ctx.fillStyle = "#080f1e";
+          ctx.fillRect(0, 0, w, h);
+          ctx.strokeStyle = "#1e293b";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(12, 12, w - 24, h - 24);
+          ctx.fillStyle = "#94a3b8";
+          ctx.font = "600 14px -apple-system, BlinkMacSystemFont, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("Capture a frame or upload a Vernier scale photo to begin", w / 2, h / 2);
+          return;
+        }
+
+        // Draw source photo with fine rotation & contrast boost
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate((state.fineRotDeg * Math.PI) / 180);
+        ctx.drawImage(state.rotatedCanvas, -w / 2, -h / 2, w, h);
+        ctx.restore();
+
+        // Apply live contrast preview directly on pixels if contrast != 1.0
+        if (Math.abs(state.contrast - 1.0) > 0.04) {
+          try {
+            var imgData = ctx.getImageData(0, 0, w, h);
+            var d = imgData.data;
+            var cFactor = state.contrast;
+            for (var i = 0; i < d.length; i += 4) {
+              d[i] = clamp(128 + cFactor * (d[i] - 128), 0, 255);
+              d[i + 1] = clamp(128 + cFactor * (d[i + 1] - 128), 0, 255);
+              d[i + 2] = clamp(128 + cFactor * (d[i + 2] - 128), 0, 255);
+            }
+            ctx.putImageData(imgData, 0, 0);
+          } catch (e) {}
+        }
+
+        var g = getCalibGeometry();
+        var boxW = g.vnX - g.v0X;
+
+        // 1. Low-opacity Blue Box (Main Scale) — NO floating text banner on image
+        ctx.fillStyle = "rgba(56, 189, 248, 0.14)";
+        ctx.fillRect(g.v0X, g.blueY, boxW, g.bandH);
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(g.v0X, g.blueY, boxW, g.bandH);
+
+        // 2. Low-opacity Amber Box (Vernier Scale) — NO floating text banner on image
+        ctx.fillStyle = "rgba(245, 158, 11, 0.14)";
+        ctx.fillRect(g.v0X, g.amberY, boxW, g.bandH);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(g.v0X, g.amberY, boxW, g.bandH);
+
+        // 3. Subtle vertical dashed CVD indicator line across both bands
+        var cvdFrac = clamp(state.cvd / Math.max(1, state.N), 0, 1);
+        var cvdX = g.v0X + cvdFrac * boxW;
+        var topBoxY = Math.min(g.blueY, g.amberY);
+        var botBoxY = Math.max(g.blueY + g.bandH, g.amberY + g.bandH);
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.85)";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(cvdX, topBoxY - 4);
+        ctx.lineTo(cvdX, botBoxY + 4);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Emerald Dashed Seam Line + central grip dot
+        ctx.save();
+        ctx.setLineDash([7, 5]);
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(Math.max(8, g.v0X - 24), g.seamY);
+        ctx.lineTo(Math.min(w - 8, g.vnX + 24), g.seamY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Seam central drag grip
+        var midX = (g.v0X + g.vnX) / 2;
+        ctx.fillStyle = "#10b981";
+        ctx.strokeStyle = "#070d19";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(midX, g.seamY, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 5. V0–VN Slider Track & High-Contrast V0 / V{N} Pill Handles
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.9)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(g.v0X, g.handleY);
+        ctx.lineTo(g.vnX, g.handleY);
+        ctx.stroke();
+
+        function drawEndpointHandle(hx, hy, label) {
+          ctx.font = "800 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+          var tw = ctx.measureText(label).width;
+          var pw = Math.max(28, tw + 12);
+          var ph = 22;
+
+          // Outer dark halo for high legibility over bright metal
+          ctx.fillStyle = "#070d19";
+          drawRoundedRect(ctx, hx - pw / 2 - 2, hy - ph / 2 - 2, pw + 4, ph + 4, 11);
+          ctx.fill();
+
+          // Amber pill
+          ctx.fillStyle = "#f59e0b";
+          drawRoundedRect(ctx, hx - pw / 2, hy - ph / 2, pw, ph, 9);
+          ctx.fill();
+
+          // Dark crisp text
+          ctx.fillStyle = "#070d19";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, hx, hy + 0.5);
+        }
+
+        drawEndpointHandle(g.v0X, g.handleY, "V0");
+        drawEndpointHandle(g.vnX, g.handleY, "V" + state.N);
+      }
+
+      // Pointer / Touch Dragging on Calibration Canvas
+      function getCanvasPoint(evt) {
+        var canvas = $("calibCanvas");
+        var rect = canvas.getBoundingClientRect();
+        var clientX = evt.touches && evt.touches[0] ? evt.touches[0].clientX : evt.clientX;
+        var clientY = evt.touches && evt.touches[0] ? evt.touches[0].clientY : evt.clientY;
+        var scaleX = canvas.width / Math.max(1, rect.width);
+        var scaleY = canvas.height / Math.max(1, rect.height);
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      }
+
+      function onCalibPointerDown(evt) {
+        if (!state.hasSource) return;
+        var pt = getCanvasPoint(evt);
+        var g = getCalibGeometry();
+        var hitRadius = 28;
+
+        var dV0 = Math.hypot(pt.x - g.v0X, pt.y - g.handleY);
+        var dVN = Math.hypot(pt.x - g.vnX, pt.y - g.handleY);
+        var dSeam = Math.abs(pt.y - g.seamY);
+
+        if (dV0 <= hitRadius && dV0 <= dVN) {
+          state.dragging = "v0";
+          state.dragOffsetX = pt.x - g.v0X;
+        } else if (dVN <= hitRadius) {
+          state.dragging = "vn";
+          state.dragOffsetX = pt.x - g.vnX;
+        } else if (dSeam <= 22 && pt.x >= g.v0X - 30 && pt.x <= g.vnX + 30) {
+          state.dragging = "seam";
+          state.dragOffsetY = pt.y - g.seamY;
+        } else if (Math.abs(pt.y - g.handleY) <= 18 && pt.x > g.v0X + 20 && pt.x < g.vnX - 20) {
+          state.dragging = "span";
+          state.dragOffsetX = pt.x - g.v0X;
+        }
+
+        if (state.dragging && evt.cancelable) {
+          evt.preventDefault();
+        }
+      }
+
+      function onCalibPointerMove(evt) {
+        if (!state.dragging || !state.hasSource) return;
+        if (evt.cancelable) evt.preventDefault();
+
+        var pt = getCanvasPoint(evt);
+        var canvas = $("calibCanvas");
+        var w = canvas.width;
+        var h = canvas.height;
+        var minSpan = 36 / w;
+
+        if (state.dragging === "v0") {
+          var nx = (pt.x - state.dragOffsetX) / w;
+          state.v0X = clamp(nx, 0.02, state.vnX - minSpan);
+        } else if (state.dragging === "vn") {
+          var nx2 = (pt.x - state.dragOffsetX) / w;
+          state.vnX = clamp(nx2, state.v0X + minSpan, 0.98);
+        } else if (state.dragging === "seam") {
+          var ny = (pt.y - state.dragOffsetY) / h;
+          state.seamY = clamp(ny, 0.10, 0.90);
+        } else if (state.dragging === "span") {
+          var span = state.vnX - state.v0X;
+          var newV0 = clamp((pt.x - state.dragOffsetX) / w, 0.02, 0.98 - span);
+          state.v0X = newV0;
+          state.vnX = newV0 + span;
+        }
+
+        drawCalibrationCanvas();
+      }
+
+      function onCalibPointerUp() {
+        if (state.dragging) {
+          state.dragging = null;
+          runCvAnalysis();
+        }
+      }
+
+      var calCanvas = $("calibCanvas");
+      on(calCanvas, "mousedown", onCalibPointerDown);
+      on(window, "mousemove", onCalibPointerMove);
+      on(window, "mouseup", onCalibPointerUp);
+
+      on(calCanvas, "touchstart", onCalibPointerDown, { passive: false });
+      on(window, "touchmove", onCalibPointerMove, { passive: false });
+      on(window, "touchend", onCalibPointerUp);
+
+      // Sliders & Calibration Buttons
+      on($("fineRotSlider"), "input", function (e) {
+        state.fineRotDeg = Number(e.target.value) || 0;
+        $("fineRotVal").textContent = state.fineRotDeg.toFixed(1) + "°";
+        drawCalibrationCanvas();
+      });
+      on($("fineRotSlider"), "change", function () {
+        if (state.hasSource) runCvAnalysis();
+      });
+
+      on($("bandHeightSlider"), "input", function (e) {
+        state.bandHeight = Number(e.target.value) || 34;
+        $("bandHeightVal").textContent = state.bandHeight + " px";
+        drawCalibrationCanvas();
+      });
+      on($("bandHeightSlider"), "change", function () {
+        if (state.hasSource) runCvAnalysis();
+      });
+
+      on($("contrastSlider"), "input", function (e) {
+        state.contrast = Number(e.target.value) || 1.3;
+        $("contrastVal").textContent = state.contrast.toFixed(1) + "x";
+        drawCalibrationCanvas();
+      });
+      on($("contrastSlider"), "change", function () {
+        if (state.hasSource) runCvAnalysis();
+      });
+
+      on($("polaritySelect"), "change", function (e) {
+        state.polarity = e.target.value;
+        if (state.hasSource) runCvAnalysis();
+      });
+
+      on($("resetMarkersBtn"), "click", function () {
+        state.seamY = 0.50;
+        state.v0X = 0.18;
+        state.vnX = 0.82;
+        state.fineRotDeg = 0;
+        if ($("fineRotSlider")) $("fineRotSlider").value = "0";
+        if ($("fineRotVal")) $("fineRotVal").textContent = "0.0°";
+        if (state.hasSource) {
+          runCvAnalysis();
+        } else {
+          drawCalibrationCanvas();
+        }
+        showToast("Alignment markers reset");
+      });
+
+      on($("reanalyzeBtn"), "click", function () {
+        if (!state.hasSource) {
+          showToast("Capture or upload a scale photo first");
+          return;
+        }
+        runCvAnalysis();
+        showToast("CVD re-analyzed");
+      });
+
+      // ---------------- PURE-JS COMPUTER VISION CVD ENGINE ----------------
+      function runCvAnalysis() {
+        if (!state.hasSource || !state.rotatedCanvas) {
+          drawCalibrationCanvas();
+          renderLoupe();
+          renderSignalGraph();
+          return;
+        }
+
+        var src = state.rotatedCanvas;
+        var sw = src.width;
+        var sh = src.height;
+        var sctx = src.getContext("2d", { willReadFrequently: true });
+        var imgData = sctx.getImageData(0, 0, sw, sh).data;
+
+        var v0Px = state.v0X * sw;
+        var vnPx = state.vnX * sw;
+        var spanPx = Math.max(20, vnPx - v0Px);
+        var padPx = Math.max(8, Math.round(spanPx * 0.08));
+        var startU = v0Px - padPx;
+        var endU = vnPx + padPx;
+        var stripW = Math.max(30, Math.round(endU - startU));
+
+        var cx = sw / 2;
+        var cy = sh / 2;
+        var seamPy = state.seamY * sh;
+        var theta = (state.fineRotDeg * Math.PI) / 180;
+        var cosT = Math.cos(theta);
+        var sinT = Math.sin(theta);
+
+        var bandH = Math.max(8, Math.round(state.bandHeight));
+        var seamGap = 3; // 3px guard gap around physical seam line
+        var cFactor = state.contrast;
+
+        function sampleLum(px, py) {
+          var x = clamp(px, 0, sw - 1.001);
+          var y = clamp(py, 0, sh - 1.001);
+          var x0 = Math.floor(x);
+          var y0 = Math.floor(y);
+          var fx = x - x0;
+          var fy = y - y0;
+
+          var i00 = (y0 * sw + x0) * 4;
+          var i10 = (y0 * sw + (x0 + 1)) * 4;
+          var i01 = ((y0 + 1) * sw + x0) * 4;
+          var i11 = ((y0 + 1) * sw + (x0 + 1)) * 4;
+
+          var l00 = 0.299 * imgData[i00] + 0.587 * imgData[i00 + 1] + 0.114 * imgData[i00 + 2];
+          var l10 = 0.299 * imgData[i10] + 0.587 * imgData[i10 + 1] + 0.114 * imgData[i10 + 2];
+          var l01 = 0.299 * imgData[i01] + 0.587 * imgData[i01 + 1] + 0.114 * imgData[i01 + 2];
+          var l11 = 0.299 * imgData[i11] + 0.587 * imgData[i11 + 1] + 0.114 * imgData[i11 + 2];
+
+          var val = (1 - fy) * ((1 - fx) * l00 + fx * l10) + fy * ((1 - fx) * l01 + fx * l11);
+          return clamp(128 + cFactor * (val - 128), 0, 255);
+        }
+
+        var topRaw = new Float64Array(stripW);
+        var botRaw = new Float64Array(stripW);
+
+        for (var u = 0; u < stripW; u++) {
+          var ux = startU + u - cx;
+          var uy = seamPy - cy;
+
+          var sumTop = 0;
+          var countTop = 0;
+          for (var dyT = -(seamGap + bandH); dyT <= -seamGap; dyT++) {
+            var rxT = cx + ux * cosT - (uy + dyT) * sinT;
+            var ryT = cy + ux * sinT + (uy + dyT) * cosT;
+            sumTop += sampleLum(rxT, ryT);
+            countTop++;
+          }
+          topRaw[u] = sumTop / Math.max(1, countTop);
+
+          var sumBot = 0;
+          var countBot = 0;
+          for (var dyB = seamGap; dyB <= seamGap + bandH; dyB++) {
+            var rxB = cx + ux * cosT - (uy + dyB) * sinT;
+            var ryB = cy + ux * sinT + (uy + dyB) * cosT;
+            sumBot += sampleLum(rxB, ryB);
+            countBot++;
+          }
+          botRaw[u] = sumBot / Math.max(1, countBot);
+        }
+
+        var mainRaw = state.swapScales ? botRaw : topRaw;
+        var vernRaw = state.swapScales ? topRaw : botRaw;
+
+        // Local background subtraction to suppress metallic glare & illumination gradients
+        var pitchPx = spanPx / Math.max(1, state.N);
+        var bgRadius = Math.max(5, Math.round(pitchPx * 0.65));
+
+        function highPass(arr) {
+          var n = arr.length;
+          var out = new Float64Array(n);
+          for (var i = 0; i < n; i++) {
+            var a = Math.max(0, i - bgRadius);
+            var b = Math.min(n - 1, i + bgRadius);
+            var sum = 0;
+            for (var k = a; k <= b; k++) sum += arr[k];
+            out[i] = arr[i] - sum / (b - a + 1);
+          }
+          return out;
+        }
+
+        var mainDiff = highPass(mainRaw);
+        var vernDiff = highPass(vernRaw);
+
+        // Determine Tick Polarity (Dark vs Light)
+        var pol = state.polarity;
+        if (pol === "auto") {
+          var darkEnergy = 0;
+          var lightEnergy = 0;
+          for (var i = 0; i < stripW; i++) {
+            if (mainDiff[i] < 0) darkEnergy += mainDiff[i] * mainDiff[i];
+            else lightEnergy += mainDiff[i] * mainDiff[i];
+            if (vernDiff[i] < 0) darkEnergy += vernDiff[i] * vernDiff[i];
+            else lightEnergy += vernDiff[i] * vernDiff[i];
+          }
+          pol = darkEnergy >= lightEnergy ? "dark" : "light";
+          state.detectedPolarity = pol === "dark" ? "Auto → Dark" : "Auto → Light";
+        } else {
+          state.detectedPolarity = pol === "dark" ? "Dark Ticks" : "Light Ticks";
+        }
+        if ($("detectedPolarityChip")) $("detectedPolarityChip").textContent = "Polarity: " + state.detectedPolarity;
+
+        function rectifyAndSmooth(diffArr) {
+          var n = diffArr.length;
+          var rect = new Float64Array(n);
+          for (var i = 0; i < n; i++) {
+            var v = pol === "dark" ? -diffArr[i] : diffArr[i];
+            rect[i] = v > 0 ? v : 0;
+          }
+          // 3-tap Gaussian smoothing
+          var sm = new Float64Array(n);
+          var maxV = 1e-6;
+          for (var j = 0; j < n; j++) {
+            var prev = j > 0 ? rect[j - 1] : rect[j];
+            var next = j < n - 1 ? rect[j + 1] : rect[j];
+            sm[j] = 0.25 * prev + 0.5 * rect[j] + 0.25 * next;
+            if (sm[j] > maxV) maxV = sm[j];
+          }
+          for (var k = 0; k < n; k++) {
+            sm[k] /= maxV;
+          }
+          return sm;
+        }
+
+        var M = rectifyAndSmooth(mainDiff);
+        var V = rectifyAndSmooth(vernDiff);
+
+        // Sub-pixel local peak detection
+        function findSubpixelPeaks(sig) {
+          var peaks = [];
+          for (var i = 1; i < sig.length - 1; i++) {
+            if (sig[i] > 0.18 && sig[i] >= sig[i - 1] && sig[i] >= sig[i + 1]) {
+              var denom = sig[i - 1] - 2 * sig[i] + sig[i + 1];
+              var delta = Math.abs(denom) > 1e-6 ? 0.5 * (sig[i - 1] - sig[i + 1]) / denom : 0;
+              delta = clamp(delta, -0.5, 0.5);
+              peaks.push({ pos: i + delta, val: sig[i] });
+            }
+          }
+          return peaks;
+        }
+
+        var mainPeaks = findSubpixelPeaks(M);
+        var vernPeaks = findSubpixelPeaks(V);
+
+        var uV0 = v0Px - startU;
+        var uVN = vnPx - startU;
+        var N = state.N;
+        var stepU = (uVN - uV0) / Math.max(1, N);
+        var corrWin = Math.max(3, Math.round(stepU * 0.35));
+        var sigma = Math.max(1.2, stepU * 0.24);
+
+        var scores = [];
+        for (var k = 0; k <= N; k++) {
+          var uNom = uV0 + k * stepU;
+
+          // Refine onto nearest detected Vernier peak within ±0.35 pitch
+          var uTick = uNom;
+          var bestVDist = stepU * 0.35;
+          for (var vp = 0; vp < vernPeaks.length; vp++) {
+            var dV = Math.abs(vernPeaks[vp].pos - uNom);
+            if (dV <= bestVDist) {
+              bestVDist = dV;
+              uTick = vernPeaks[vp].pos;
+            }
+          }
+
+          // Nearest Main scale peak alignment
+          var minMDist = Infinity;
+          var matchedMainVal = 0;
+          for (var mp = 0; mp < mainPeaks.length; mp++) {
+            var dM = Math.abs(mainPeaks[mp].pos - uTick);
+            if (dM < minMDist) {
+              minMDist = dM;
+              matchedMainVal = mainPeaks[mp].val;
+            }
+          }
+
+          var peakProx = isFinite(minMDist) ? Math.exp(-0.5 * Math.pow(minMDist / sigma, 2)) : 0;
+
+          // Local Normalized Cross-Correlation around uTick
+          var centerIdx = clamp(Math.round(uTick), 0, stripW - 1);
+          var wStart = Math.max(0, centerIdx - corrWin);
+          var wEnd = Math.min(stripW - 1, centerIdx + corrWin);
+          var dot = 0, normM = 0, normV = 0;
+          for (var idx = wStart; idx <= wEnd; idx++) {
+            dot += M[idx] * V[idx];
+            normM += M[idx] * M[idx];
+            normV += V[idx] * V[idx];
+          }
+          var ncc = normM > 1e-6 && normV > 1e-6 ? dot / Math.sqrt(normM * normV) : 0;
+
+          var vAmp = V[centerIdx];
+          var mAmp = Math.max(M[centerIdx], matchedMainVal);
+          var tickStrength = Math.sqrt(clamp(vAmp * mAmp, 0, 1));
+
+          var rawScore = (0.52 * peakProx + 0.33 * ncc + 0.15 * tickStrength) * 100;
+          scores.push({
+            div: k,
+            score: clamp(rawScore, 0, 100),
+            uPos: uTick,
+            offsetPx: isFinite(minMDist) ? minMDist : 0
+          });
+        }
+
+        var sorted = scores.slice().sort(function (a, b) { return b.score - a.score; });
+        var winner = sorted[0] || { div: 0, score: 50, uPos: uV0, offsetPx: 0 };
+        var runnerUp = sorted[1] || { score: winner.score * 0.85 };
+
+        var margin = Math.max(0, winner.score - runnerUp.score);
+        var confPct = Math.round(clamp(55 + margin * 1.8 + winner.score * 0.22, 42, 99));
+
+        state.analysis = {
+          cvd: winner.div,
+          subpixelCvd: winner.div,
+          confidence: confPct,
+          candidates: sorted.slice(0, 3),
+          mainProfile: M,
+          vernierProfile: V,
+          mainPeaks: mainPeaks,
+          vernierPeaks: vernPeaks,
+          uV0: uV0,
+          uVN: uVN,
+          stripWidth: stripW
+        };
+
+        selectCandidateCvd(winner.div);
+      }
+
+      function selectCandidateCvd(divIdx) {
+        var idx = clamp(Math.round(divIdx), 0, state.N);
+        state.cvd = idx;
+        if ($("cvdInput")) $("cvdInput").value = String(idx);
+        if ($("detectedCvdDisplay")) $("detectedCvdDisplay").textContent = "V" + idx;
+        if ($("loupeTargetChip")) $("loupeTargetChip").textContent = "V" + idx;
+
+        var a = state.analysis;
+        if ($("confidenceBadge")) {
+          $("confidenceBadge").textContent = state.hasSource ? "Confidence: " + a.confidence + "%" : "Confidence: --";
+        }
+        if ($("subpixelDisplay")) {
+          $("subpixelDisplay").textContent = state.hasSource
+            ? "Division " + idx + " of " + state.N + " • Best optical line coincidence"
+            : "Capture or upload a scale photo to detect CVD";
+        }
+
+        // Render Top-3 Candidate Chips
+        var row = $("candidatesRow");
+        if (row) {
+          row.innerHTML = "";
+          var list = a.candidates && a.candidates.length ? a.candidates : [{ div: idx, score: 0 }];
+          list.forEach(function (cand, rank) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "cand-chip" + (cand.div === idx ? " active" : "");
+            btn.textContent = "#" + (rank + 1) + ": V" + cand.div + (state.hasSource ? " (" + Math.round(cand.score) + "%)" : "");
+            on(btn, "click", function () {
+              selectCandidateCvd(cand.div);
+            });
+            row.appendChild(btn);
+          });
+        }
+
+        updateCalculator();
+        drawCalibrationCanvas();
+        renderLoupe();
+        renderSignalGraph();
+      }
+
+      // ---------------- 4x VERIFICATION LOUPE ----------------
+      function renderLoupe() {
+        var canvas = $("loupeCanvas");
+        if (!canvas) return;
+        var ctx = canvas.getContext("2d");
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#050914";
+        ctx.fillRect(0, 0, w, h);
+
+        if (!state.hasSource || !state.rotatedCanvas) {
+          ctx.fillStyle = "#64748b";
+          ctx.font = "600 12px -apple-system, BlinkMacSystemFont, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("4× Loupe awaits image", w / 2, h / 2);
+          return;
+        }
+
+        var src = state.rotatedCanvas;
+        var sw = src.width;
+        var sh = src.height;
+        var frac = clamp(state.cvd / Math.max(1, state.N), 0, 1);
+        var targetX = (state.v0X + frac * (state.vnX - state.v0X)) * sw;
+        var targetY = state.seamY * sh;
+
+        var zoomFactor = 4.0;
+        var cropW = w / zoomFactor;
+        var cropH = h / zoomFactor;
+
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate((state.fineRotDeg * Math.PI) / 180);
+        ctx.drawImage(
+          src,
+          targetX - cropW / 2,
+          targetY - cropH / 2,
+          cropW,
+          cropH,
+          -w / 2,
+          -h / 2,
+          w,
+          h
+        );
+        ctx.restore();
+
+        // Crosshair overlay
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.85)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(w / 2, 0);
+        ctx.lineTo(w / 2, h);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "rgba(248, 250, 252, 0.55)";
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Top / Bottom Scale Labels on Loupe
+        var topLabel = state.swapScales ? "VERNIER SCALE (V" + state.cvd + ")" : "MAIN SCALE";
+        var botLabel = state.swapScales ? "MAIN SCALE" : "VERNIER SCALE (V" + state.cvd + ")";
+        var topColor = state.swapScales ? "#fbbf24" : "#38bdf8";
+        var botColor = state.swapScales ? "#38bdf8" : "#fbbf24";
+
+        ctx.font = "700 10px ui-monospace, monospace";
+        ctx.textAlign = "left";
+        ctx.fillStyle = "rgba(7, 13, 25, 0.8)";
+        ctx.fillRect(6, 6, 145, 16);
+        ctx.fillStyle = topColor;
+        ctx.fillText(topLabel, 10, 14);
+
+        ctx.fillStyle = "rgba(7, 13, 25, 0.8)";
+        ctx.fillRect(6, h - 22, 145, 16);
+        ctx.fillStyle = botColor;
+        ctx.fillText(botLabel, 10, h - 14);
+      }
+
+      // ---------------- TOTAL READING CALCULATOR ----------------
+      function updateCalculator() {
+        var unit = ($("unitInput") && $("unitInput").value.trim()) || "mm";
+        state.unit = unit;
+
+        var suffixes = document.querySelectorAll(".unit-suffix");
+        for (var i = 0; i < suffixes.length; i++) {
+          suffixes[i].textContent = unit;
+        }
+
+        var pills = document.querySelectorAll(".unit-pill");
+        for (var j = 0; j < pills.length; j++) {
+          if (pills[j].getAttribute("data-unit") === unit) {
+            pills[j].classList.add("active");
+          } else {
+            pills[j].classList.remove("active");
+          }
+        }
+
+        var lc = Number($("lcInput") && $("lcInput").value);
+        if (!isFinite(lc)) lc = 0;
+        state.lc = lc;
+
+        var msr = Number($("msrInput") && $("msrInput").value);
+        if (!isFinite(msr)) msr = 0;
+        state.msr = msr;
+
+        var cvd = Number($("cvdInput") && $("cvdInput").value);
+        if (!isFinite(cvd)) cvd = 0;
+        state.cvd = cvd;
+
+        var ze = Number($("zeroErrorInput") && $("zeroErrorInput").value);
+        if (!isFinite(ze)) ze = 0;
+        state.zeroError = ze;
+
+        var total = msr + cvd * lc - ze;
+        var decimals = lc > 0 && lc < 0.01 ? 4 : 3;
+        var formattedTotal = total.toFixed(decimals) + " " + unit;
+
+        if ($("lcSummaryChip")) $("lcSummaryChip").textContent = "LC = " + lc + " " + unit;
+        if ($("totalFormulaText")) {
+          $("totalFormulaText").textContent =
+            "Total = " + msr + " + (" + cvd + " × " + lc + ") − (" + ze + ")";
+        }
+        if ($("totalReadingDisplay")) $("totalReadingDisplay").textContent = formattedTotal;
+      }
+
+      on($("unitInput"), "input", updateCalculator);
+      var unitPillEls = document.querySelectorAll(".unit-pill");
+      for (var up = 0; up < unitPillEls.length; up++) {
+        on(unitPillEls[up], "click", function () {
+          var u = this.getAttribute("data-unit");
+          if ($("unitInput")) $("unitInput").value = u;
+          updateCalculator();
+        });
+      }
+
+      on($("autoCalcLcBtn"), "click", function () {
+        var msd = Number($("msdInput") && $("msdInput").value);
+        if (!isFinite(msd) || msd <= 0) msd = 1;
+        state.msd = msd;
+        var derivedLc = Number((msd / state.N).toFixed(6));
+        if ($("lcInput")) $("lcInput").value = String(derivedLc);
+        updateCalculator();
+        showToast("LC = " + derivedLc + " " + state.unit + " (1 MSD / " + state.N + ")");
+      });
+
+      on($("lcInput"), "input", updateCalculator);
+      on($("msrInput"), "input", updateCalculator);
+      on($("zeroErrorInput"), "input", updateCalculator);
+      on($("cvdInput"), "input", function (e) {
+        var v = clamp(Math.round(Number(e.target.value) || 0), 0, state.N);
+        state.cvd = v;
+        if ($("detectedCvdDisplay")) $("detectedCvdDisplay").textContent = "V" + v;
+        if ($("loupeTargetChip")) $("loupeTargetChip").textContent = "V" + v;
+        updateCalculator();
+        drawCalibrationCanvas();
+        renderLoupe();
+        renderSignalGraph();
+      });
+
+      on($("copyReadingBtn"), "click", function () {
+        var text =
+          "CVD: V" +
+          state.cvd +
+          " | MSR: " +
+          state.msr +
+          " " +
+          state.unit +
+          " | LC: " +
+          state.lc +
+          " " +
+          state.unit +
+          " | Total: " +
+          ($("totalReadingDisplay") ? $("totalReadingDisplay").textContent : "");
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            showToast("Copied reading to clipboard");
+          }).catch(function () {
+            showToast(text);
+          });
+        } else {
+          showToast(text);
+        }
+      });
+
+      // ---------------- 1D SIGNAL ALIGNMENT GRAPH ----------------
+      function renderSignalGraph() {
+        var canvas = $("signalCanvas");
+        if (!canvas) return;
+        var parentW = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 860;
+        canvas.width = Math.max(300, Math.round(parentW));
+        canvas.height = 220;
+
+        var ctx = canvas.getContext("2d");
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#050914";
+        ctx.fillRect(0, 0, w, h);
+
+        var padL = 24;
+        var padR = 24;
+        var padT = 22;
+        var padB = 28;
+        var plotW = w - padL - padR;
+        var plotH = h - padT - padB;
+
+        // Subtle horizontal grid lines
+        ctx.strokeStyle = "#1e293b";
+        ctx.lineWidth = 1;
+        for (var g = 0; g <= 4; g++) {
+          var gy = padT + (plotH * g) / 4;
+          ctx.beginPath();
+          ctx.moveTo(padL, gy);
+          ctx.lineTo(w - padR, gy);
+          ctx.stroke();
+        }
+
+        var a = state.analysis;
+        if (!state.hasSource || !a.mainProfile || a.mainProfile.length < 2) {
+          ctx.fillStyle = "#64748b";
+          ctx.font = "600 13px -apple-system, BlinkMacSystemFont, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("1D Main vs. Vernier tick signal profiles will render after image capture/upload", w / 2, h / 2);
+          return;
+        }
+
+        var M = a.mainProfile;
+        var V = a.vernierProfile;
+        var n = M.length;
+
+        function uToX(u) {
+          return padL + (u / Math.max(1, n - 1)) * plotW;
+        }
+
+        // Highlight Selected CVD Band
+        var stepU = (a.uVN - a.uV0) / Math.max(1, state.N);
+        var cvdU = a.uV0 + state.cvd * stepU;
+        var cvdX = uToX(cvdU);
+        var bandHalfW = Math.max(8, (stepU / Math.max(1, n - 1)) * plotW * 0.42);
+
+        ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
+        ctx.fillRect(cvdX - bandHalfW, padT, bandHalfW * 2, plotH);
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(cvdX, padT);
+        ctx.lineTo(cvdX, padT + plotH);
+        ctx.stroke();
+
+        // Draw Main Scale Signal M(x) in Sky-Blue
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (var i = 0; i < n; i++) {
+          var x = uToX(i);
+          var y = padT + plotH * (1 - M[i]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Draw Vernier Scale Signal V(x) in Amber
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (var j = 0; j < n; j++) {
+          var xv = uToX(j);
+          var yv = padT + plotH * (1 - V[j]);
+          if (j === 0) ctx.moveTo(xv, yv);
+          else ctx.lineTo(xv, yv);
+        }
+        ctx.stroke();
+
+        // Division Index Tick Marks & Labels along bottom axis
+        var labelStep = state.N > 25 ? 5 : state.N > 12 ? 2 : 1;
+        ctx.font = "700 10px ui-monospace, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        for (var k = 0; k <= state.N; k++) {
+          var uk = a.uV0 + k * stepU;
+          var xk = uToX(uk);
+          ctx.strokeStyle = k === state.cvd ? "#10b981" : "#475569";
+          ctx.lineWidth = k === state.cvd ? 2 : 1;
+          ctx.beginPath();
+          ctx.moveTo(xk, padT + plotH);
+          ctx.lineTo(xk, padT + plotH + 5);
+          ctx.stroke();
+
+          if (k % labelStep === 0 || k === state.N || k === state.cvd) {
+            ctx.fillStyle = k === state.cvd ? "#6ee7b7" : "#94a3b8";
+            ctx.fillText(String(k), xk, padT + plotH + 7);
+          }
+        }
+      }
+
+      // Window Resize Handler
+      on(window, "resize", function () {
+        drawCameraHud();
+        drawCalibrationCanvas();
+        renderSignalGraph();
+      });
+
+      // Initial Boot
+      setDivisionsN(10, false);
+      updateCalculator();
+      drawCameraHud();
+      drawCalibrationCanvas();
+      renderLoupe();
+      renderSignalGraph();
+    })();
+  </script>
+</body>
+</html>
